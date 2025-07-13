@@ -74,11 +74,11 @@ public class JwtTokenProvider {
     }
     
     private Claims getAllClaimsFromToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
     
     private Boolean isTokenExpired(String token) {
@@ -87,8 +87,12 @@ public class JwtTokenProvider {
     }
     
     public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = getUsernameFromToken(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        try {
+            final String username = getUsernameFromToken(token);
+            return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        } catch (Exception e) {
+            return false;
+        }
     }
     
     private Long getUserIdFromUserDetails(UserDetails userDetails) {

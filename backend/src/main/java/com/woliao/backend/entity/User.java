@@ -25,7 +25,7 @@ public class User implements UserDetails {
     private String phoneNumber;
     
     @NotBlank(message = "密码不能为空")
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String password;
     
     @Column(name = "nickname")
@@ -37,25 +37,12 @@ public class User implements UserDetails {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-    
-    @Column(name = "last_login_at")
-    private LocalDateTime lastLoginAt;
-    
-    @Column(name = "is_active")
-    private Boolean isActive = true;
-    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
     }
     
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    // 移除@PreUpdate，因为新表结构中没有updated_at字段
     
     // UserDetails 接口实现
     @Override
@@ -75,7 +62,7 @@ public class User implements UserDetails {
     
     @Override
     public boolean isAccountNonLocked() {
-        return isActive;
+        return true; // 简化处理，所有用户都未锁定
     }
     
     @Override
@@ -85,7 +72,7 @@ public class User implements UserDetails {
     
     @Override
     public boolean isEnabled() {
-        return isActive;
+        return true; // 简化处理，所有用户都启用
     }
     
     // Getters and Setters
@@ -138,27 +125,5 @@ public class User implements UserDetails {
         this.createdAt = createdAt;
     }
     
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-    
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-    
-    public LocalDateTime getLastLoginAt() {
-        return lastLoginAt;
-    }
-    
-    public void setLastLoginAt(LocalDateTime lastLoginAt) {
-        this.lastLoginAt = lastLoginAt;
-    }
-    
-    public Boolean getIsActive() {
-        return isActive;
-    }
-    
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
+    // 移除不存在的字段的getter和setter方法
 } 

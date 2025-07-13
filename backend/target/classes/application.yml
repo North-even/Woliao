@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/woliao?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: password
+    password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
@@ -19,8 +19,7 @@ spring:
   
   sql:
     init:
-      mode: always
-      data-locations: classpath:data.sql
+      mode: never
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
@@ -28,9 +27,9 @@ spring:
   
   data:
     redis:
-      host: localhost
+      host: 192.168.11.200
       port: 6379
-      password: 
+      password: 123456
       database: 0
       timeout: 2000ms
       lettuce:

@@ -67,10 +67,6 @@ public class AuthService {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         User user = userRepository.findByPhoneNumber(userDetails.getUsername()).orElseThrow();
         
-        // 更新最后登录时间
-        user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
-        
         // 将刷新令牌存储到Redis
         redisTemplate.opsForValue().set(
             "refresh_token:" + refreshToken,

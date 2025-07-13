@@ -6,6 +6,9 @@ import Messages from '@/views/Messages.vue'
 import Contacts from '@/views/Contacts.vue'
 import Register from '@/views/Register.vue'
 import Accounts from '@/views/Accounts.vue'
+import AccountNickname from '@/views/AccountNickname.vue'
+import AccountPassword from '@/views/AccountPassword.vue'
+import AccountSwitch from '@/views/AccountSwitch.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -45,7 +48,27 @@ const routes: RouteRecordRaw[] = [
         path: 'accounts',
         name: 'Accounts',
         component: Accounts,
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
+        children: [
+          {
+            path: 'nickname',
+            name: 'AccountNickname',
+            component: AccountNickname,
+            meta: { requiresAuth: true }
+          },
+          {
+            path: 'password',
+            name: 'AccountPassword',
+            component: AccountPassword,
+            meta: { requiresAuth: true }
+          },
+          {
+            path: 'switch',
+            name: 'AccountSwitch',
+            component: AccountSwitch,
+            meta: { requiresAuth: true }
+          }
+        ]
       }
     ]
   }

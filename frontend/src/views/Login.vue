@@ -148,10 +148,42 @@ const handleLogin = async () => {
     })
     
     const { accessToken, refreshToken } = response.data
-    
+
     // 存储令牌
     localStorage.setItem('accessToken', accessToken)
     localStorage.setItem('refreshToken', refreshToken)
+
+    // 存储账号信息到accounts
+    let accounts = []
+    try {
+      accounts = JSON.parse(localStorage.getItem('accounts') || '[]')
+    } catch { accounts = [] }
+    // 获取昵称（可从后端返回或表单，暂用手机号）
+    let nickname = ''
+    if (response.data.nickname) {
+      nickname = response.data.nickname
+    } else {
+      nickname = loginForm.phoneNumber
+    }
+    // 查找是否已存在
+    const now = Date.now()
+    const existIdx = accounts.findIndex((a:any) => a.phoneNumber === loginForm.phoneNumber)
+    const newAccount = {
+      phoneNumber: loginForm.phoneNumber,
+      nickname,
+      accessToken,
+      refreshToken,
+      lastLogin: now
+    }
+    if (existIdx !== -1) {
+      accounts[existIdx] = newAccount
+    } else {
+      accounts.push(newAccount)
+    }
+    // 只保留3天内的账号
+    const THREE_DAYS = 3 * 24 * 60 * 60 * 1000
+    accounts = accounts.filter((a:any) => now - a.lastLogin < THREE_DAYS)
+    localStorage.setItem('accounts', JSON.stringify(accounts))
     
     ElMessage.success('登录成功')
     router.push('/')

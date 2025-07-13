@@ -21,12 +21,6 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false }
   },
   {
-    path: '/accounts',
-    name: 'Accounts',
-    component: Accounts,
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/',
     component: MainLayout,
     meta: { requiresAuth: true },
@@ -45,6 +39,12 @@ const routes: RouteRecordRaw[] = [
         path: 'contacts',
         name: 'Contacts',
         component: Contacts,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'accounts',
+        name: 'Accounts',
+        component: Accounts,
         meta: { requiresAuth: true }
       }
     ]

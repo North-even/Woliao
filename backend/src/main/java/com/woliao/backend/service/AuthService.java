@@ -4,6 +4,7 @@ import com.woliao.backend.dto.LoginRequest;
 import com.woliao.backend.dto.LoginResponse;
 import com.woliao.backend.dto.RefreshTokenRequest;
 import com.woliao.backend.dto.RefreshTokenResponse;
+import com.woliao.backend.dto.RegisterRequest;
 import com.woliao.backend.entity.User;
 import com.woliao.backend.repository.UserRepository;
 import com.woliao.backend.security.JwtTokenProvider;
@@ -50,7 +51,22 @@ public class AuthService {
         if (!captchaService.validateCaptcha(loginRequest.getCaptchaId(), loginRequest.getVerificationCode())) {
             throw new RuntimeException("验证码错误");
         }
-        
+
+        // 打印前端传来的明文密码
+        System.out.println("[调试] 前端传来的明文密码: " + loginRequest.getPassword());
+
+        // 查询数据库用户
+        User user = userRepository.findByPhoneNumber(loginRequest.getPhoneNumber()).orElse(null);
+        if (user != null) {
+            System.out.println("[调试] 数据库中的密码hash: " + user.getPassword());
+            // 用PasswordEncoder加密前端明文密码，打印加密结果
+            System.out.println("[调试] 明文密码BCrypt加密后: " + passwordEncoder.encode(loginRequest.getPassword()));
+            // 用PasswordEncoder校验明文密码和数据库hash是否匹配
+            System.out.println("[调试] passwordEncoder.matches结果: " + passwordEncoder.matches(loginRequest.getPassword(), user.getPassword()));
+        } else {
+            System.out.println("[调试] 数据库未找到该手机号: " + loginRequest.getPhoneNumber());
+        }
+
         // 认证用户
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
@@ -58,15 +74,15 @@ public class AuthService {
                 loginRequest.getPassword()
             )
         );
-        
+
         // 生成令牌
         String accessToken = jwtTokenProvider.generateAccessToken(authentication);
         String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
-        
+
         // 获取用户信息
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        User user = userRepository.findByPhoneNumber(userDetails.getUsername()).orElseThrow();
-        
+        user = userRepository.findByPhoneNumber(userDetails.getUsername()).orElseThrow();
+
         // 将刷新令牌存储到Redis
         redisTemplate.opsForValue().set(
             "refresh_token:" + refreshToken,
@@ -74,7 +90,7 @@ public class AuthService {
             refreshTokenExpiration,
             TimeUnit.MILLISECONDS
         );
-        
+
         return new LoginResponse(accessToken, refreshToken, refreshTokenExpiration);
     }
     
@@ -97,5 +113,22 @@ public class AuthService {
         );
         
         return new RefreshTokenResponse(newAccessToken, refreshTokenExpiration);
+    }
+
+    public void register(RegisterRequest registerRequest) {
+        // 校验图形验证码
+        if (!captchaService.validateCaptcha(registerRequest.getCaptchaId(), registerRequest.getVerificationCode())) {
+            throw new RuntimeException("验证码错误");
+        }
+        // 检查手机号是否已注册
+        if (userRepository.existsByPhoneNumber(registerRequest.getPhoneNumber())) {
+            throw new RuntimeException("手机号已注册");
+        }
+        // 加密密码并保存新用户
+        User user = new User();
+        user.setPhoneNumber(registerRequest.getPhoneNumber());
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setNickname(registerRequest.getNickname());
+        userRepository.save(user);
     }
 } 

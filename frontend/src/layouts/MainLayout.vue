@@ -26,12 +26,22 @@
         </el-icon>
         <span>联系人</span>
       </div>
+      <div
+        class="nav-item"
+        :class="{ active: $route.path === '/accounts' }"
+        @click="$router.push('/accounts')"
+      >
+        <el-icon size="24">
+          <Setting />
+        </el-icon>
+        <span>账号管理</span>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ChatDotRound, UserFilled } from '@element-plus/icons-vue'
+import { ChatDotRound, UserFilled, Setting } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

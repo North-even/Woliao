@@ -4,6 +4,8 @@ import MainLayout from '@/layouts/MainLayout.vue'
 import Login from '@/views/Login.vue'
 import Messages from '@/views/Messages.vue'
 import Contacts from '@/views/Contacts.vue'
+import Register from '@/views/Register.vue'
+import Accounts from '@/views/Accounts.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -11,6 +13,18 @@ const routes: RouteRecordRaw[] = [
     name: 'Login',
     component: Login,
     meta: { requiresAuth: false }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: Register,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/accounts',
+    name: 'Accounts',
+    component: Accounts,
+    meta: { requiresAuth: true }
   },
   {
     path: '/',

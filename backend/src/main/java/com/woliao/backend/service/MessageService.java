@@ -32,4 +32,8 @@ public class MessageService {
     public List<Message> getSingleChatHistory(Long userId1, Long userId2) {
         return messageRepository.findChatHistory(userId1, userId2);
     }
+
+    public List<Message> getGroupChatHistory(Long groupId) {
+        return messageRepository.findByReceiverIdAndReceiverTypeOrderByCreatedAtAsc(groupId, Message.ReceiverTypeEnum.GROUP);
+    }
 } 

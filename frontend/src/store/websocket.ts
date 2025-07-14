@@ -6,6 +6,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
   const socket = ref<WebSocket | null>(null);
   const isConnected = ref(false);
   const messages = ref<any[]>([]); // 用于存储接收到的消息
+  const newMessage = ref<any | null>(null); // 新增一个ref来专门存放最新收到的消息
 
   // VVVV 在这里添加新方法 VVVV
   const clearMessages = () => {
@@ -43,13 +44,8 @@ export const useWebSocketStore = defineStore('websocket', () => {
         return; // 不把心跳消息计入聊天记录
       }
 
-      messages.value.push(messageData);
-      // 新增：收到新消息时自动刷新会话列表
-      try {
-        if ((window as any).__refreshSessions) {
-          (window as any).__refreshSessions();
-        }
-      } catch {}
+      // 将新消息存入newMessage，而不是直接push到messages数组
+      newMessage.value = messageData;
     };
 
     ws.onerror = (error) => {
@@ -84,6 +80,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
   return {
     isConnected,
     messages,
+    newMessage, // 暴露 newMessage
     clearMessages, // 暴露新方法
     setMessages,   // 暴露新方法
     connect,

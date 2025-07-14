@@ -25,4 +25,15 @@ public class MessageController {
         List<Message> history = messageService.getSingleChatHistory(currentUser.getId(), partnerId);
         return ResponseEntity.ok(history);
     }
+
+    @GetMapping("/history/group/{groupId}")
+    public ResponseEntity<List<Message>> getGroupChatHistory(
+        @AuthenticationPrincipal User currentUser, // 确保用户已登录
+        @PathVariable Long groupId
+    ) {
+        // TODO: 在未来的版本中，这里应该增加一步验证，确保 currentUser 是 groupId 这个群的成员
+
+        List<Message> history = messageService.getGroupChatHistory(groupId);
+        return ResponseEntity.ok(history);
+    }
 } 

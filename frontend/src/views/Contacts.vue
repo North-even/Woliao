@@ -2,54 +2,61 @@
   <div class="contacts-page">
     <div class="page-header">
       <h2>联系人</h2>
+      <el-input
+        v-model="searchText"
+        placeholder="搜索联系人"
+        :prefix-icon="Search"
+        clearable
+        class="search-input"
+      />
     </div>
-    
+
     <div class="contacts-content">
-      <el-collapse v-model="activeNames" accordion>
-        <!-- 群聊 -->
+      <el-collapse v-model="activeCollapseNames" class="contacts-collapse">
         <el-collapse-item name="groups">
           <template #title>
             <div class="collapse-title">
               <el-icon><UserFilled /></el-icon>
               <span>群聊</span>
-              <span class="count">({{ contacts.groups.length }})</span>
+              <span class="count-badge">{{ filteredGroups.length }}</span>
             </div>
           </template>
-          
-          <div class="contact-list">
+          <div v-if="filteredGroups.length > 0" class="contact-list">
             <div
-              v-for="group in sortedGroups"
+              v-for="group in filteredGroups"
               :key="group.id"
               class="contact-item"
               @click="openGroupChat(group)"
             >
-              <el-avatar :size="40" :src="`https://via.placeholder.com/40/67c23a/ffffff?text=${group.name.charAt(0)}`" />
-              <span class="contact-name">{{ group.name }}</span>
+              <el-avatar :size="40" :src="group.avatarUrl || `https://via.placeholder.com/40/67c23a/ffffff?text=${group.groupName.charAt(0)}`" />
+              <span class="contact-name">{{ group.groupName }}</span>
             </div>
           </div>
+          <el-empty v-else description="暂无群聊" />
         </el-collapse-item>
-        
-        <!-- 个人 -->
-        <el-collapse-item name="individuals">
+
+        <el-collapse-item name="friends">
           <template #title>
             <div class="collapse-title">
               <el-icon><User /></el-icon>
-              <span>个人</span>
-              <span class="count">({{ contacts.individuals.length }})</span>
+              <span>好友</span>
+              <span class="count-badge">{{ filteredFriends.length }}</span>
             </div>
           </template>
-          
-          <div class="contact-list">
+          <div v-if="filteredFriends.length > 0" class="contact-list">
             <div
-              v-for="individual in sortedIndividuals"
-              :key="individual.id"
+              v-for="friend in filteredFriends"
+              :key="friend.id"
               class="contact-item"
-              @click="openUserChat(individual)"
+              @click="openUserChat(friend)"
             >
-              <el-avatar :size="40" :src="individual.avatar" />
-              <span class="contact-name">{{ individual.name }}</span>
+              <el-badge :is-dot="friend.isOnline" class="online-status-badge">
+                <el-avatar :size="40" :src="friend.avatarUrl || `https://via.placeholder.com/40/409eff/ffffff?text=${friend.nickname.charAt(0)}`" />
+              </el-badge>
+              <span class="contact-name">{{ friend.nickname }}</span>
             </div>
           </div>
+          <el-empty v-else description="暂无好友" />
         </el-collapse-item>
       </el-collapse>
     </div>
@@ -57,60 +64,70 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { UserFilled, User } from '@element-plus/icons-vue'
-import api from '@/api/axios'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import { Search, UserFilled, User } from '@element-plus/icons-vue';
+import api from '@/api/axios';
 
-interface Contact {
-  id: number
-  name: string
-  avatar?: string
+interface Friend {
+  id: number;
+  nickname: string;
+  avatarUrl: string;
+  isOnline: boolean; // 新增字段
 }
 
-interface ContactsData {
-  groups: Contact[]
-  individuals: Contact[]
+interface Group {
+  id: number;
+  groupName: string;
+  avatarUrl: string;
 }
 
-const contacts = ref<ContactsData>({ groups: [], individuals: [] })
-const activeNames = ref<string[]>([])
-const loading = ref(false)
+const router = useRouter();
+const friends = ref<Friend[]>([]);
+const groups = ref<Group[]>([]);
+const activeCollapseNames = ref(['friends', 'groups']); // 默认展开所有
+const searchText = ref('');
 
-const sortedGroups = computed(() => {
-  return [...contacts.value.groups].sort((a, b) => a.name.localeCompare(b.name))
-})
+// 新增：按在线状态和字母排序好友
+const sortedFriends = computed(() => 
+  [...friends.value].sort((a, b) => {
+    if (a.isOnline && !b.isOnline) return -1;
+    if (!a.isOnline && b.isOnline) return 1;
+    return a.nickname.localeCompare(b.nickname, 'zh-Hans-CN');
+  })
+);
 
-const sortedIndividuals = computed(() => {
-  return [...contacts.value.individuals].sort((a, b) => a.name.localeCompare(b.name))
-})
+const sortedGroups = computed(() => 
+  [...groups.value].sort((a, b) => a.groupName.localeCompare(b.groupName, 'zh-Hans-CN'))
+);
+
+// 新增：根据搜索文本过滤列表
+const filteredFriends = computed(() =>
+  sortedFriends.value.filter(friend => friend.nickname.toLowerCase().includes(searchText.value.toLowerCase()))
+);
+
+const filteredGroups = computed(() =>
+  sortedGroups.value.filter(group => group.groupName.toLowerCase().includes(searchText.value.toLowerCase()))
+);
 
 const fetchContacts = async () => {
   try {
-    loading.value = true
-    const response = await api.get('/contacts')
-    contacts.value = response.data
+    const response = await api.get('/contacts');
+    friends.value = response.data.friends;
+    groups.value = response.data.groups;
   } catch (error) {
-    ElMessage.error('获取联系人列表失败')
-  } finally {
-    loading.value = false
+    ElMessage.error('获取联系人列表失败');
+    console.error(error);
   }
-}
+};
 
-const router = useRouter()
-
-const openUserChat = (user: any) => {
-  router.push(`/chat/user/${user.id}`)
-}
-
-const openGroupChat = (group: any) => {
-  router.push(`/chat/group/${group.id}`)
-}
+const openUserChat = (friend: Friend) => router.push(`/chat/user/${friend.id}`);
+const openGroupChat = (group: Group) => router.push(`/chat/group/${group.id}`);
 
 onMounted(() => {
-  fetchContacts()
-})
+  fetchContacts();
+});
 </script>
 
 <style scoped>
@@ -119,75 +136,73 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
 }
-
 .page-header {
-  padding: 16px 0;
+  padding: 16px;
   border-bottom: 1px solid #e4e7ed;
-  margin-bottom: 16px;
 }
-
 .page-header h2 {
-  margin: 0;
+  margin: 0 0 16px 0;
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
 }
-
+.search-input {
+  width: 100%;
+}
 .contacts-content {
   flex: 1;
   overflow-y: auto;
+  padding: 0 16px;
 }
-
 .collapse-title {
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: #303133;
+  font-size: 16px;
 }
-
-.count {
+.count-badge {
+  background-color: #e4e7ed;
   color: #909399;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 12px;
   font-weight: normal;
-  font-size: 14px;
 }
-
 .contact-list {
-  padding: 8px 0;
+  padding: 0 8px;
 }
-
 .contact-item {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  border-radius: 8px;
-  transition: background-color 0.3s;
+  padding: 10px 8px;
   cursor: pointer;
+  transition: background-color 0.2s;
+  border-radius: 6px;
 }
-
 .contact-item:hover {
   background-color: #f5f7fa;
 }
-
 .contact-name {
   margin-left: 12px;
   font-size: 16px;
   color: #303133;
-  font-weight: 500;
 }
-
+.online-status-badge :deep(.el-badge__content.is-dot) {
+  background-color: #67c23a; /* 在线状态显示为绿色 */
+  border: 1px solid white;
+  width: 10px;
+  height: 10px;
+}
+.el-collapse {
+  border: none;
+}
 :deep(.el-collapse-item__header) {
-  background-color: #fafafa;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  padding: 16px;
+  border: none;
 }
-
-:deep(.el-collapse-item__content) {
-  padding: 0;
-}
-
 :deep(.el-collapse-item__wrap) {
   border: none;
+}
+:deep(.el-collapse-item__content) {
+  padding-bottom: 10px;
 }
 </style> 

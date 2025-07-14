@@ -41,7 +41,18 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
+import { useWebSocketStore } from '@/store/websocket'; // 导入 WebSocket store
 import { ChatDotRound, UserFilled, Setting } from '@element-plus/icons-vue'
+
+const webSocketStore = useWebSocketStore();
+
+onMounted(() => {
+  const token = localStorage.getItem('accessToken');
+  if (token && !webSocketStore.isConnected) {
+    webSocketStore.connect(token);
+  }
+});
 </script>
 
 <style scoped>

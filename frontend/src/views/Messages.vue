@@ -110,8 +110,10 @@ const openChat = (session: any) => {
   router.push({ path: `/chat/${chatType}/${id}`, query: { name } });
 }
 
+// 只保留 fetchSessions，每次都从后端加载
 onMounted(() => {
-  fetchSessions()
+  fetchSessions();
+  (window as any).__refreshSessions = fetchSessions;
 })
 </script>
 

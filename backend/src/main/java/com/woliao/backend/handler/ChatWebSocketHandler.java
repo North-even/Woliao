@@ -20,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import com.woliao.backend.repository.ChatMessageRepository;
 import com.woliao.backend.entity.ChatMessageEntity;
 import java.time.LocalDateTime;
+import com.woliao.backend.service.MessageService; // 导入新服务
 
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
@@ -34,6 +35,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Autowired
     private ChatMessageRepository chatMessageRepository;
+
+    // VVVV 在这里添加新的注入 VVVV
+    @Autowired
+    private MessageService messageService;
+    // ^^^^ 在这里添加新的注入 ^^^^
 
     // 【新增】在这里处理未来的聊天消息逻辑，不再是注释了
     @Override
@@ -57,7 +63,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
             // 【核心逻辑】根据消息类型进行分发处理
             switch (type) {
-                case "SINGLE_CHAT":
+                case "USER_CHAT": // 从 SINGLE_CHAT 修改而来
                     handleSingleChatMessage(senderId, chatMessage);
                     break;
                 case "GROUP_CHAT":
@@ -77,20 +83,24 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Long recipientId = chatMessage.getToUserId();
         WebSocketSession recipientSession = sessions.get(recipientId);
         String messageToSend = objectMapper.writeValueAsString(chatMessage);
+
         if (recipientSession != null && recipientSession.isOpen()) {
             recipientSession.sendMessage(new TextMessage(messageToSend));
             logger.info("Message from {} to {} forwarded.", senderId, recipientId);
         } else {
-            logger.info("User {} is offline. Message for them will be stored.", recipientId);
+            logger.info("User {} is offline.", recipientId);
         }
-        // 消息持久化
-        ChatMessageEntity entity = new ChatMessageEntity();
-        entity.setType("SINGLE_CHAT");
-        entity.setFromUserId(senderId);
-        entity.setToUserId(recipientId);
-        entity.setContent(chatMessage.getContent());
-        entity.setTimestamp(LocalDateTime.now());
-        chatMessageRepository.save(entity);
+
+        // VVVV 在这里添加回显逻辑 VVVV
+        // 将消息也发回给发送方，以实现UI同步
+        WebSocketSession senderSession = sessions.get(senderId);
+        if (senderSession != null && senderSession.isOpen()) {
+            senderSession.sendMessage(new TextMessage(messageToSend));
+        }
+        // ^^^^ 在这里添加回显逻辑 ^^^^
+
+        // 保存消息到数据库
+        messageService.saveMessage(senderId, recipientId, "SINGLE", chatMessage.getContent());
     }
 
     private void handleGroupChatMessage(Long senderId, ChatMessage chatMessage) throws IOException {
@@ -116,6 +126,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         entity.setContent(chatMessage.getContent());
         entity.setTimestamp(LocalDateTime.now());
         chatMessageRepository.save(entity);
+        // 保存群聊消息到数据库
+        messageService.saveMessage(senderId, groupId, "GROUP", chatMessage.getContent());
     }
 
 

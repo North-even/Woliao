@@ -9,6 +9,7 @@ import Accounts from '@/views/Accounts.vue'
 import AccountNickname from '@/views/AccountNickname.vue'
 import AccountPassword from '@/views/AccountPassword.vue'
 import AccountSwitch from '@/views/AccountSwitch.vue'
+import WebSocketTest from '@/views/WebSocketTest.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -69,6 +70,12 @@ const routes: RouteRecordRaw[] = [
             meta: { requiresAuth: true }
           }
         ]
+      },
+      {
+        path: 'ws-test',
+        name: 'WebSocketTest',
+        component: WebSocketTest,
+        meta: { requiresAuth: false }
       }
     ]
   }

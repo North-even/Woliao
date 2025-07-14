@@ -17,6 +17,9 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.security.core.Authentication;
+import com.woliao.backend.repository.ChatMessageRepository;
+import com.woliao.backend.entity.ChatMessageEntity;
+import java.time.LocalDateTime;
 
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
@@ -28,6 +31,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     // 使用@Autowired自动注入ObjectMapper，这是Spring推荐的做法
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private ChatMessageRepository chatMessageRepository;
 
     // 【新增】在这里处理未来的聊天消息逻辑，不再是注释了
     @Override
@@ -70,33 +76,28 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private void handleSingleChatMessage(Long senderId, ChatMessage chatMessage) throws IOException {
         Long recipientId = chatMessage.getToUserId();
         WebSocketSession recipientSession = sessions.get(recipientId);
-
-        // 准备要发送的消息体（可以加上发送方信息）
         String messageToSend = objectMapper.writeValueAsString(chatMessage);
-
-        // 如果接收方在线，直接转发
         if (recipientSession != null && recipientSession.isOpen()) {
             recipientSession.sendMessage(new TextMessage(messageToSend));
             logger.info("Message from {} to {} forwarded.", senderId, recipientId);
         } else {
             logger.info("User {} is offline. Message for them will be stored.", recipientId);
         }
-
-        // 【注意】无论对方是否在线，消息都应该被存储到数据库。
-        // 这一步是为第三阶段“离线消息”做准备，我们在这里提前实现。
-        // saveMessageToDatabase(senderId, recipientId, "SINGLE", chatMessage.getContent());
+        // 消息持久化
+        ChatMessageEntity entity = new ChatMessageEntity();
+        entity.setType("SINGLE_CHAT");
+        entity.setFromUserId(senderId);
+        entity.setToUserId(recipientId);
+        entity.setContent(chatMessage.getContent());
+        entity.setTimestamp(LocalDateTime.now());
+        chatMessageRepository.save(entity);
     }
 
     private void handleGroupChatMessage(Long senderId, ChatMessage chatMessage) throws IOException {
-        Long groupId = chatMessage.getToUserId(); // 在群聊中，toUserId代表groupId
+        Long groupId = chatMessage.getToUserId();
         String messageToSend = objectMapper.writeValueAsString(chatMessage);
-
-        // 遍历所有在线用户，进行广播
         sessions.forEach((userId, session) -> {
-            // 不把消息发给自己
             if (!userId.equals(senderId)) {
-                // 在真实场景中，这里还需要判断该userId是否属于这个groupId
-                // 目前我们先简化为向所有人广播
                 try {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(messageToSend));
@@ -107,9 +108,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
         });
         logger.info("Group message from user {} to group {} broadcasted.", senderId, groupId);
-
-        // 同样，群聊消息也需要存储
-        // saveMessageToDatabase(senderId, groupId, "GROUP", chatMessage.getContent());
+        // 消息持久化
+        ChatMessageEntity entity = new ChatMessageEntity();
+        entity.setType("GROUP_CHAT");
+        entity.setFromUserId(senderId);
+        entity.setToUserId(groupId);
+        entity.setContent(chatMessage.getContent());
+        entity.setTimestamp(LocalDateTime.now());
+        chatMessageRepository.save(entity);
     }
 
 

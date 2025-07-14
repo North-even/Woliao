@@ -4,11 +4,13 @@ import com.woliao.backend.entity.User;
 import com.woliao.backend.repository.UserRepository;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/user")
@@ -18,6 +20,8 @@ public class UserController {
     private UserRepository userRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     // 更改昵称
     @PostMapping("/update-nickname")
@@ -44,6 +48,11 @@ public class UserController {
         user.setPassword(passwordEncoder.encode(req.getNewPassword()));
         userRepository.save(user);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/online")
+    public Set<String> getOnlineUsers() {
+        return stringRedisTemplate.opsForSet().members("online_users");
     }
 
     // DTOs

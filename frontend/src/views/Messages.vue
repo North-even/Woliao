@@ -100,9 +100,14 @@ const fetchSessions = async () => {
 const router = useRouter()
 
 const openChat = (session: any) => {
-  // 这里假设 session 有 chat_type 和 partner_id 字段
-  const chatType = session.chat_type?.toLowerCase() === 'single' ? 'user' : 'group'
-  router.push(`/chat/${chatType}/${session.partner_id}`)
+  // 兼容后端返回字段名，确保 chat_type/partner_id 存在
+  const chatTypeRaw = session.chat_type || session.type || '';
+  const partnerIdRaw = session.partner_id || session.partnerId || session.id;
+  const chatType = String(chatTypeRaw).toLowerCase() === 'single' ? 'user' : 'group';
+  const id = String(partnerIdRaw);
+  const name = session.name || '';
+  console.log('openChat 跳转参数:', { chatType, id, name, session });
+  router.push({ path: `/chat/${chatType}/${id}`, query: { name } });
 }
 
 onMounted(() => {

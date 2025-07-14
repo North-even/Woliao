@@ -21,6 +21,7 @@
               v-for="group in sortedGroups"
               :key="group.id"
               class="contact-item"
+              @click="openGroupChat(group)"
             >
               <el-avatar :size="40" :src="`https://via.placeholder.com/40/67c23a/ffffff?text=${group.name.charAt(0)}`" />
               <span class="contact-name">{{ group.name }}</span>
@@ -43,6 +44,7 @@
               v-for="individual in sortedIndividuals"
               :key="individual.id"
               class="contact-item"
+              @click="openUserChat(individual)"
             >
               <el-avatar :size="40" :src="individual.avatar" />
               <span class="contact-name">{{ individual.name }}</span>
@@ -59,6 +61,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled, User } from '@element-plus/icons-vue'
 import api from '@/api/axios'
+import { useRouter } from 'vue-router'
 
 interface Contact {
   id: number
@@ -93,6 +96,16 @@ const fetchContacts = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const router = useRouter()
+
+const openUserChat = (user: any) => {
+  router.push(`/chat/user/${user.id}`)
+}
+
+const openGroupChat = (group: any) => {
+  router.push(`/chat/group/${group.id}`)
 }
 
 onMounted(() => {

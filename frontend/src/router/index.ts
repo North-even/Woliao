@@ -10,6 +10,7 @@ import AccountNickname from '@/views/AccountNickname.vue'
 import AccountPassword from '@/views/AccountPassword.vue'
 import AccountSwitch from '@/views/AccountSwitch.vue'
 import WebSocketTest from '@/views/WebSocketTest.vue'
+import ChatWindow from '@/views/chat/ChatWindow.vue';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -76,6 +77,12 @@ const routes: RouteRecordRaw[] = [
         name: 'WebSocketTest',
         component: WebSocketTest,
         meta: { requiresAuth: false }
+      },
+      {
+        path: 'chat/:type/:id',
+        name: 'ChatWindow',
+        component: ChatWindow,
+        meta: { requiresAuth: true }
       }
     ]
   }

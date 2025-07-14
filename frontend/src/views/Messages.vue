@@ -10,6 +10,7 @@
         :key="session.id"
         class="session-item"
         :class="{ pinned: session.isPinned }"
+        @click="openChat(session)"
       >
         <div class="session-avatar">
           <el-avatar :size="48" :src="`https://via.placeholder.com/48/409eff/ffffff?text=${session.name.charAt(0)}`" />
@@ -39,6 +40,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Star } from '@element-plus/icons-vue'
 import api from '@/api/axios'
+import { useRouter } from 'vue-router'
 
 interface Session {
   id: number
@@ -93,6 +95,14 @@ const fetchSessions = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const router = useRouter()
+
+const openChat = (session: any) => {
+  // 这里假设 session 有 chat_type 和 partner_id 字段
+  const chatType = session.chat_type?.toLowerCase() === 'single' ? 'user' : 'group'
+  router.push(`/chat/${chatType}/${session.partner_id}`)
 }
 
 onMounted(() => {

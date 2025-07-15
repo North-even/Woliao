@@ -36,6 +36,7 @@ import { useRoute } from 'vue-router';
 import { ElMessage, ElButton, ElDialog, ElIcon } from 'element-plus';
 import { Setting as IepSetting } from '@element-plus/icons-vue';
 import axios from '@/api/axios';
+import { useWebSocketStore } from '@/store/websocket';
 
 const route = useRoute();
 const input = ref('');
@@ -48,12 +49,18 @@ const isGroup = route.path.startsWith('/group/');
 const chatId = route.params.userId || route.params.groupId;
 const chatTitle = isGroup ? `群聊 ${chatId}` : `与用户 ${chatId}`;
 
+const webSocketStore = useWebSocketStore();
+
 onMounted(() => {
   messages.value = [
     { from: isGroup ? '群友A' : '对方', content: '你好！' },
     { from: '我', content: '你好，有什么可以帮你？' },
   ];
   scrollToBottom();
+  // 标记已读
+  const chatType = isGroup ? 'GROUP' : 'SINGLE';
+  axios.post(`/api/sessions/${chatType}/${chatId}/read`).catch(err => console.error('标记已读失败', err));
+  webSocketStore.clearUnreadCount(Number(chatId), chatType);
 });
 
 function sendMsg() {

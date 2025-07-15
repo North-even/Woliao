@@ -110,4 +110,14 @@ public class SessionService {
         }
         return sessions;
     }
+
+    // 新增：标记会话为已读
+    @org.springframework.transaction.annotation.Transactional
+    public void markAsRead(Long userId, Long partnerId, String chatType) {
+        // 这里只实现单聊，群聊可扩展
+        jdbcTemplate.update(
+            "UPDATE chat_sessions SET unread_count = 0 WHERE user_id = ? AND partner_id = ? AND chat_type = ?",
+            userId, partnerId, chatType
+        );
+    }
 } 

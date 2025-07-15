@@ -11,9 +11,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/api/axios';
+import { useWebSocketStore } from '@/store/websocket';
 
 const router = useRouter();
 
@@ -40,6 +41,16 @@ async function goToChat(session: any) {
     router.push(`/group/${session.partnerId}`);
   }
 }
+
+const webSocketStore = useWebSocketStore();
+
+watch(() => webSocketStore.newMessage, (newMessage) => {
+  if (!newMessage) return;
+  if (newMessage.type === 'MARK_AS_READ') {
+    const session = sessions.value.find(s => s.partnerId === newMessage.partnerId && s.chatType === newMessage.chatType);
+    if (session) session.unreadCount = 0;
+  }
+});
 
 onMounted(() => {
   fetchSessions();

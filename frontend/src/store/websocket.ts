@@ -53,6 +53,11 @@ export const useWebSocketStore = defineStore('websocket', () => {
     unreadMap[key] = 0;
   };
 
+  // 新增：仅通知前端清除某会话未读数
+  function clearUnreadCount(partnerId: number, chatType: string) {
+    newMessage.value = { type: 'MARK_AS_READ', partnerId, chatType };
+  }
+
   // 动作：建立连接
   const connect = (token: string) => {
     if (isConnected.value || !token) {
@@ -128,6 +133,7 @@ export const useWebSocketStore = defineStore('websocket', () => {
     unreadMap,
     fetchUnreadMessages,
     clearUnread,
+    clearUnreadCount,
     connect,
     sendMessage,
     disconnect,

@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,5 +28,16 @@ public class SessionController {
         }
         List<SessionDTO> sessions = sessionService.getSessionsForUser(currentUser.getId());
         return ResponseEntity.ok(sessions);
+    }
+
+    // 新增：标记会话为已读
+    @PostMapping("/{chatType}/{partnerId}/read")
+    public ResponseEntity<Void> markAsRead(
+        @AuthenticationPrincipal User currentUser,
+        @PathVariable String chatType,
+        @PathVariable Long partnerId
+    ) {
+        sessionService.markAsRead(currentUser.getId(), partnerId, chatType.toUpperCase());
+        return ResponseEntity.ok().build();
     }
 } 

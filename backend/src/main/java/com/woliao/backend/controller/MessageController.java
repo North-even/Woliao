@@ -2,6 +2,7 @@ package com.woliao.backend.controller;
 
 import com.woliao.backend.entity.Message;
 import com.woliao.backend.entity.User;
+import com.woliao.backend.entity.ChatMessageEntity;
 import com.woliao.backend.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,5 +36,21 @@ public class MessageController {
 
         List<Message> history = messageService.getGroupChatHistory(groupId);
         return ResponseEntity.ok(history);
+    }
+
+    // 拉取未读消息
+    @GetMapping("/unread")
+    public ResponseEntity<List<ChatMessageEntity>> getUnreadMessages(@AuthenticationPrincipal User currentUser) {
+        if (currentUser == null) return ResponseEntity.status(401).build();
+        List<ChatMessageEntity> unread = messageService.getUnreadMessages(currentUser.getId());
+        return ResponseEntity.ok(unread);
+    }
+
+    // 批量标记为已读
+    @PostMapping("/mark-read")
+    public ResponseEntity<?> markMessagesAsRead(@AuthenticationPrincipal User currentUser, @RequestBody List<Long> ids) {
+        if (currentUser == null) return ResponseEntity.status(401).build();
+        messageService.markMessagesAsRead(ids);
+        return ResponseEntity.ok().build();
     }
 } 

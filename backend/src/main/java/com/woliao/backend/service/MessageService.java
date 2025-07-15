@@ -8,12 +8,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.woliao.backend.entity.ChatMessageEntity;
+import com.woliao.backend.repository.ChatMessageRepository;
 
 @Service
 public class MessageService {
 
     @Autowired
     private MessageRepository messageRepository;
+
+    @Autowired
+    private ChatMessageRepository chatMessageRepository;
 
     @Transactional
     public Message saveMessage(Long senderId, Long receiverId, String receiverType, String content) {
@@ -35,5 +40,18 @@ public class MessageService {
 
     public List<Message> getGroupChatHistory(Long groupId) {
         return messageRepository.findByReceiverIdAndReceiverTypeOrderByCreatedAtAsc(groupId, Message.ReceiverTypeEnum.GROUP);
+    }
+
+    // 查询未读消息
+    public List<ChatMessageEntity> getUnreadMessages(Long userId) {
+        return chatMessageRepository.findUnreadMessages(userId);
+    }
+
+    // 批量标记为已读
+    @Transactional
+    public void markMessagesAsRead(List<Long> ids) {
+        if (ids != null && !ids.isEmpty()) {
+            chatMessageRepository.markMessagesAsRead(ids);
+        }
     }
 } 

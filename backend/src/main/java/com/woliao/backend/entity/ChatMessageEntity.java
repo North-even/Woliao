@@ -25,6 +25,9 @@ public class ChatMessageEntity {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
+    @Column(nullable = false)
+    private Boolean isRead = false;
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -38,4 +41,6 @@ public class ChatMessageEntity {
     public void setContent(String content) { this.content = content; }
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+    public Boolean getIsRead() { return isRead; }
+    public void setIsRead(Boolean isRead) { this.isRead = isRead; }
 } 

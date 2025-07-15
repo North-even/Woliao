@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, onUnmounted } from 'vue';
 import { useWebSocketStore } from '@/store/websocket'; // 导入 WebSocket store
 import { ChatDotRound, UserFilled, Setting } from '@element-plus/icons-vue'
 
@@ -52,6 +52,11 @@ onMounted(() => {
   if (token && !webSocketStore.isConnected) {
     webSocketStore.connect(token);
   }
+  window.addEventListener('beforeunload', webSocketStore.disconnect);
+});
+onUnmounted(() => {
+  webSocketStore.disconnect();
+  window.removeEventListener('beforeunload', webSocketStore.disconnect);
 });
 </script>
 

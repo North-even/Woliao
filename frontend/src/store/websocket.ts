@@ -1,12 +1,15 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
+import axios from '@/api/axios';
+import { reactive } from 'vue';
 
 export const useWebSocketStore = defineStore('websocket', () => {
   const socket = ref<WebSocket | null>(null);
   const isConnected = ref(false);
   const messages = ref<any[]>([]); // 用于存储接收到的消息
   const newMessage = ref<any | null>(null); // 新增一个ref来专门存放最新收到的消息
+  let heartbeatTimer: any = null;
 
   // VVVV 在这里添加新方法 VVVV
   const clearMessages = () => {
@@ -17,6 +20,38 @@ export const useWebSocketStore = defineStore('websocket', () => {
     messages.value = historyMessages;
   };
   // ^^^^ 在这里添加新方法 ^^^^
+
+  // 未读消息Map，key为会话ID（单聊为对方ID，群聊为群ID），value为未读数
+  const unreadMap = reactive<{ [key: string]: number }>({});
+
+  // 拉取未读消息并统计
+  const fetchUnreadMessages = async () => {
+    const res = await axios.get('/api/messages/unread');
+    // 清空
+    Object.keys(unreadMap).forEach(k => delete unreadMap[k]);
+    // 统计
+    for (const msg of res.data) {
+      const key = msg.type === 'GROUP_CHAT' ? `group_${msg.toUserId}` : `single_${msg.fromUserId}`;
+      unreadMap[key] = (unreadMap[key] || 0) + 1;
+    }
+  };
+
+  // 清除某会话未读
+  const clearUnread = async (sessionType: string, sessionId: number) => {
+    const key = sessionType === 'group' ? `group_${sessionId}` : `single_${sessionId}`;
+    // 拉取未读消息ID
+    const res = await axios.get('/api/messages/unread');
+    const ids = res.data
+      .filter((msg: any) =>
+        (sessionType === 'group' && msg.type === 'GROUP_CHAT' && msg.toUserId === sessionId) ||
+        (sessionType === 'single' && msg.type === 'SINGLE_CHAT' && msg.fromUserId === sessionId)
+      )
+      .map((msg: any) => msg.id);
+    if (ids.length > 0) {
+      await axios.post('/api/messages/mark-read', ids);
+    }
+    unreadMap[key] = 0;
+  };
 
   // 动作：建立连接
   const connect = (token: string) => {
@@ -32,7 +67,12 @@ export const useWebSocketStore = defineStore('websocket', () => {
       isConnected.value = true;
       socket.value = ws;
       console.log('WebSocket connected successfully!');
-      ElMessage.success('长连接已建立');
+      // 自动心跳
+      heartbeatTimer = setInterval(() => {
+        if (isConnected.value && socket.value) {
+          socket.value.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 10000); // 10秒心跳
     };
 
     ws.onmessage = (event) => {
@@ -50,14 +90,14 @@ export const useWebSocketStore = defineStore('websocket', () => {
 
     ws.onerror = (error) => {
       console.error('WebSocket Error:', error);
-      ElMessage.error('长连接发生错误');
     };
 
     ws.onclose = () => {
       isConnected.value = false;
       socket.value = null;
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
       console.log('WebSocket disconnected.');
-      ElMessage.warning('长连接已断开');
     };
   };
 
@@ -75,6 +115,8 @@ export const useWebSocketStore = defineStore('websocket', () => {
     if (socket.value) {
       socket.value.close();
     }
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
   };
 
   return {
@@ -83,6 +125,9 @@ export const useWebSocketStore = defineStore('websocket', () => {
     newMessage, // 暴露 newMessage
     clearMessages, // 暴露新方法
     setMessages,   // 暴露新方法
+    unreadMap,
+    fetchUnreadMessages,
+    clearUnread,
     connect,
     sendMessage,
     disconnect,
